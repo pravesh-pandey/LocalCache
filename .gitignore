@@ -1,0 +1,44 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# VS Code
+.vscode/
+
+# Claude Code
+.claude/
+
+# macOS
+.DS_Store
+
+# Credentials - NEVER commit these!
+gradle.properties
+*.gpg
+*.asc
+secring.*
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+*~
+
+# Test outputs
+*.cache
+/tmp/
+
+PUBLISHING.md

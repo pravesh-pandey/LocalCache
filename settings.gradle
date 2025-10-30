@@ -1,0 +1,5 @@
+rootProject.name = 'localcache'
+
+include 'java'
+
+project(':java').name = 'localcache-core'

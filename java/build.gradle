@@ -1,0 +1,120 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+    id 'com.gradleup.nmcp' version '0.0.8'
+}
+
+group = 'io.github.pravesh-pandey'
+version = '0.1.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+    withJavadocJar()
+    withSourcesJar()
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            artifactId = 'localcache'
+
+            pom {
+                name = 'LocalCache'
+                description = 'A filesystem-backed cache with O(1) lookups, TTL support, and Redis-like ergonomics for disk-based persistence'
+                url = 'https://github.com/pravesh-pandey/LocalCache'
+
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'pravesh-pandey'
+                        name = 'Pravesh Pandey'
+                        email = 'pravesh.pandey.mnnit@example.com'
+                    }
+                }
+
+                scm {
+                    connection = 'scm:git:git://github.com/pravesh-pandey/LocalCache.git'
+                    developerConnection = 'scm:git:ssh://github.com/pravesh-pandey/LocalCache.git'
+                    url = 'https://github.com/pravesh-pandey/LocalCache'
+                }
+            }
+        }
+    }
+
+    // Repository configuration removed - using nmcp plugin for new Central Portal publishing
+}
+
+signing {
+    def signingKeyId = project.findProperty("signing.keyId") ?: System.getenv("SIGNING_KEY_ID")
+    def signingPassword = project.findProperty("signing.password") ?: System.getenv("SIGNING_PASSWORD")
+
+    if (signingKeyId && !signingKeyId.toString().startsWith("0x") && signingKeyId.toString().matches("[0-9A-Fa-f]+")) {
+        signingKeyId = "0x${signingKeyId}"
+    }
+
+    def signingKeyCandidate = project.findProperty("signing.key") ?: System.getenv("SIGNING_KEY")
+    if (signingKeyCandidate && !signingKeyCandidate.toString().contains("-----END PGP PRIVATE KEY BLOCK-----")) {
+        signingKeyCandidate = null
+    }
+    def signingKey = signingKeyCandidate
+    if (signingKey) {
+        signingKey = signingKey.toString().replace("\r\n", "\n")
+    }
+    if (!signingKey) {
+        def keyFileProp = project.findProperty("signing.keyFile") ?: System.getenv("SIGNING_KEY_FILE")
+        if (!keyFileProp) {
+            def defaultKeyFile = project.rootProject.layout.projectDirectory.file("private-key.asc").asFile
+            if (defaultKeyFile.exists()) {
+                keyFileProp = defaultKeyFile.absolutePath
+            }
+        }
+        if (keyFileProp) {
+            signingKey = new File(keyFileProp).getText("UTF-8").replace("\r\n", "\n")
+        }
+    }
+
+    required {
+        (gradle.taskGraph.hasTask("publish") || gradle.taskGraph.hasTask("publishToSonatype")) &&
+                signingKey != null && signingPassword != null
+    }
+
+    if (signingKey && signingPassword) {
+        logger.lifecycle("Signing configured: keyLength={}, passwordPresent={}", signingKey.length(), signingPassword != null)
+        logger.info("Using in-memory signing key ({} chars)", signingKey.length())
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.mavenJava
+    } else {
+        logger.lifecycle("Signing skipped: missing signing key material or password")
+    }
+}
+
+// New Maven Central Portal Publishing
+nmcp {
+    publish("mavenJava") {
+        username = project.findProperty("ossrhUsername") ?: System.getenv("OSSRH_USERNAME")
+        password = project.findProperty("ossrhPassword") ?: System.getenv("OSSRH_PASSWORD")
+        publicationType = "AUTOMATIC"
+    }
+}
